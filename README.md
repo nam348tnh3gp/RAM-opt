@@ -30,7 +30,6 @@ This Bash script provides a complete, automated solution for configuring and man
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 
----
 
 ## ✨ Features
 
