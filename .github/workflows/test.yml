@@ -1,0 +1,59 @@
+name: Manual Test RAM Optimizer
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (dry-run or full)'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - full
+      distro:
+        description: 'Linux distribution to test'
+        required: true
+        default: 'ubuntu:22.04'
+        type: string
+
+jobs:
+  test:
+    name: Test on ${{ github.event.inputs.distro }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ github.event.inputs.distro }}
+      options: --privileged
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (varies by distro)
+        run: |
+          if command -v apt &>/dev/null; then
+            apt update
+            apt install -y sudo curl bc util-linux systemd kmod
+          elif command -v dnf &>/dev/null; then
+            dnf install -y sudo curl bc util-linux systemd kmod
+          elif command -v yum &>/dev/null; then
+            yum install -y sudo curl bc util-linux systemd kmod
+          elif command -v pacman &>/dev/null; then
+            pacman -Syu --noconfirm sudo curl bc util-linux systemd kmod
+          fi
+
+      - name: Make script executable
+        run: chmod +x ram-opt.sh
+
+      - name: Run dry-run test
+        if: github.event.inputs.test_mode == 'dry-run'
+        run: sudo ./ram-opt.sh --dry-run
+
+      - name: Run full test (non-interactive)
+        if: github.event.inputs.test_mode == 'full'
+        run: |
+          # Automatically answer 'y' to proceed, and 'n' to reboot
+          echo -e "y\nn" | sudo ./ram-opt.sh
+
+      - name: Show status after test
+        if: always()
+        run: sudo ./ram-opt.sh --status
