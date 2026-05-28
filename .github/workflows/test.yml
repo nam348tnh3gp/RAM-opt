@@ -1,10 +1,10 @@
-name: Manual Test RAM Optimizer on VM
+name: Manual Test RAM Optimizer
 
 on:
   workflow_dispatch:
     inputs:
       test_mode:
-        description: 'Test mode (dry-run or full)'
+        description: 'Test mode'
         required: true
         default: 'dry-run'
         type: choice
@@ -13,35 +13,46 @@ on:
           - full
 
 jobs:
-  test-vm:
+  test:
+    name: Test on GitHub Runner (Azure kernel)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y bc util-linux
+        run: sudo apt update && sudo apt install -y bc util-linux
 
-      - name: Load zRAM kernel module
+      - name: Check zRAM support
+        id: check_zram
         run: |
-          sudo modprobe zram
-          lsmod | grep zram || echo "zRAM module loaded"
+          if modinfo zram &>/dev/null; then
+            echo "supported=true" >> $GITHUB_OUTPUT
+            echo "zRAM module exists"
+          else
+            echo "supported=false" >> $GITHUB_OUTPUT
+            echo "⚠️ zRAM not supported in this kernel (Azure). Full test will be skipped."
+          fi
 
       - name: Make script executable
         run: chmod +x ram-opt.sh
 
-      - name: Dry-run test
-        if: github.event.inputs.test_mode == 'dry-run'
+      - name: Dry-run test (always runs)
         run: sudo ./ram-opt.sh --dry-run
 
-      - name: Full test (non-interactive)
-        if: github.event.inputs.test_mode == 'full'
-        run: |
-          # Automatically answer 'y' to proceed, 'n' to reboot
-          echo -e "y\nn" | sudo ./ram-opt.sh
+      - name: Full test (only if zRAM supported and mode = full)
+        if: steps.check_zram.outputs.supported == 'true' && github.event.inputs.test_mode == 'full'
+        run: echo -e "y\nn" | sudo ./ram-opt.sh
 
-      - name: Show final status
-        if: always()
+      - name: Show status (if zRAM supported)
+        if: steps.check_zram.outputs.supported == 'true'
         run: sudo ./ram-opt.sh --status
+
+      - name: Reminder for full test on real hardware
+        if: steps.check_zram.outputs.supported == 'false' && github.event.inputs.test_mode == 'full'
+        run: |
+          echo "============================================="
+          echo "⚠️  Full test requires a machine with zRAM kernel module."
+          echo "    GitHub runners use Azure kernel without zRAM."
+          echo "    To test fully, run on your own machine or a VM with standard kernel."
+          echo "============================================="
