@@ -1,6 +1,6 @@
 # RAM Optimizer
 
-**Enterprise-grade, production‑ready zRAM + Swap management for Linux servers, desktops, and containers**
+**zRAM + Swap management for Linux servers, desktops, and containers**
 
 This Bash script provides a complete, automated solution for configuring and managing zRAM (compressed RAM‑based swap) alongside a traditional swap file. It delivers faster swap performance, reduces disk wear (especially on SSDs), and improves overall memory efficiency – all with full systemd integration, Prometheus metrics, and automatic health monitoring.
 
