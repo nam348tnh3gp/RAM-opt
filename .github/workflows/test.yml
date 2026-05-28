@@ -1,4 +1,4 @@
-name: Manual Test RAM Optimizer
+name: Manual Test RAM Optimizer on VM
 
 on:
   workflow_dispatch:
@@ -11,57 +11,37 @@ on:
         options:
           - dry-run
           - full
-      distro:
-        description: 'Linux distribution to test'
-        required: true
-        default: 'ubuntu:22.04'
-        type: string
 
 jobs:
-  test:
-    name: Test on ${{ github.event.inputs.distro }}
+  test-vm:
     runs-on: ubuntu-latest
-    container:
-      image: ${{ github.event.inputs.distro }}
-      options: --privileged
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
-          if command -v apt &>/dev/null; then
-            apt update
-            apt install -y sudo curl bc util-linux systemd kmod
-          elif command -v dnf &>/dev/null; then
-            dnf install -y sudo curl bc util-linux systemd kmod
-          elif command -v yum &>/dev/null; then
-            yum install -y sudo curl bc util-linux systemd kmod
-          elif command -v pacman &>/dev/null; then
-            pacman -Syu --noconfirm sudo curl bc util-linux systemd kmod
-          fi
+          sudo apt update
+          sudo apt install -y bc util-linux
+
+      - name: Load zRAM kernel module
+        run: |
+          sudo modprobe zram
+          lsmod | grep zram || echo "zRAM module loaded"
 
       - name: Make script executable
         run: chmod +x ram-opt.sh
 
-      - name: Check zRAM support
-        id: check_zram
-        run: |
-          if modprobe zram 2>/dev/null; then
-            echo "supported=true" >> $GITHUB_OUTPUT
-          else
-            echo "supported=false" >> $GITHUB_OUTPUT
-            echo "⚠️ zRAM not supported, running dry-run only (full test will be skipped)"
-          fi
-
-      - name: Run dry-run test (always)
+      - name: Dry-run test
+        if: github.event.inputs.test_mode == 'dry-run'
         run: sudo ./ram-opt.sh --dry-run
 
-      - name: Run full test (only if zRAM supported and mode == full)
-        if: steps.check_zram.outputs.supported == 'true' && github.event.inputs.test_mode == 'full'
+      - name: Full test (non-interactive)
+        if: github.event.inputs.test_mode == 'full'
         run: |
+          # Automatically answer 'y' to proceed, 'n' to reboot
           echo -e "y\nn" | sudo ./ram-opt.sh
 
-      - name: Show status (if supported)
-        if: steps.check_zram.outputs.supported == 'true'
+      - name: Show final status
+        if: always()
         run: sudo ./ram-opt.sh --status
