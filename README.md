@@ -15,20 +15,20 @@ This Bash script provides a complete, automated solution for configuring and man
 
 ## 📋 Table of Contents
 
-- [Features](#features)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Example Session](#example-session)
-- [Monitoring & Metrics](#monitoring--metrics)
-- [Health Checks](#health-checks)
-- [Dry‑Run Mode](#dry‑run-mode)
-- [Backup & Restore](#backup--restore)
-- [Uninstalling](#uninstalling)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
+- [Features](#Features)
+- [System Requirements](#System-requirements)
+- [Installation](#Installation)
+- [Configuration](#Configuration)
+- [Usage](#Usage)
+- [Example Session](#Example-session)
+- [Monitoring & Metrics](#Monitoring--metrics)
+- [Health Checks](#Health-checks)
+- [Dry‑Run Mode](#Dry‑run-mode)
+- [Backup & Restore](#Backup--restore)
+- [Uninstalling](#Uninstalling)
+- [Troubleshooting](#Troubleshooting)
+- [License](#License)
+- [Acknowledgements](#Acknowledgements)
 
 
 ## ✨ Features
