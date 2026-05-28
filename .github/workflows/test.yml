@@ -28,7 +28,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies (varies by distro)
+      - name: Install dependencies
         run: |
           if command -v apt &>/dev/null; then
             apt update
@@ -44,16 +44,24 @@ jobs:
       - name: Make script executable
         run: chmod +x ram-opt.sh
 
-      - name: Run dry-run test
-        if: github.event.inputs.test_mode == 'dry-run'
+      - name: Check zRAM support
+        id: check_zram
+        run: |
+          if modprobe zram 2>/dev/null; then
+            echo "supported=true" >> $GITHUB_OUTPUT
+          else
+            echo "supported=false" >> $GITHUB_OUTPUT
+            echo "⚠️ zRAM not supported, running dry-run only (full test will be skipped)"
+          fi
+
+      - name: Run dry-run test (always)
         run: sudo ./ram-opt.sh --dry-run
 
-      - name: Run full test (non-interactive)
-        if: github.event.inputs.test_mode == 'full'
+      - name: Run full test (only if zRAM supported and mode == full)
+        if: steps.check_zram.outputs.supported == 'true' && github.event.inputs.test_mode == 'full'
         run: |
-          # Automatically answer 'y' to proceed, and 'n' to reboot
           echo -e "y\nn" | sudo ./ram-opt.sh
 
-      - name: Show status after test
-        if: always()
+      - name: Show status (if supported)
+        if: steps.check_zram.outputs.supported == 'true'
         run: sudo ./ram-opt.sh --status
